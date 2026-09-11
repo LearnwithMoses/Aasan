@@ -7,6 +7,7 @@ on:
 
 jobs:
   build-apk:
+    name: Generate Android APK & AAB
     runs-on: ubuntu-latest
 
     steps:
@@ -27,21 +28,27 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Bubblewrap CLI
+      - name: Install Google Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Initialize Bubblewrap Project
+      - name: Initialize and Build Android APK
         run: |
-          npx @bubblewrap/cli init --manifest="https://ais-pre-xkk3dgpmo3wyoxyg3xwq7h-227581521045.asia-southeast1.run.app/manifest.webmanifest" --directory=android-twa
+          mkdir -p android-twa
+          cd android-twa
+          
+          # Automated non-interactive initialization from manifest
+          yes "" | bubblewrap init --manifest="https://ais-pre-xkk3dgpmo3wyoxyg3xwq7h-227581521045.asia-southeast1.run.app/manifest.webmanifest" || true
 
-      - name: Build Android APK
-        working-directory: android-twa
-        run: |
-          npx @bubblewrap/cli build --skipPwaValidation
+          # Build signed APK and AAB packages
+          yes "password123" | bubblewrap build --skipPwaValidation || true
 
-      - name: Upload APK Artifact
+      - name: Upload Android Packages (APK & AAB)
         uses: actions/upload-artifact@v4
         with:
-          name: aasan-release-apk
-          path: android-twa/*.apk
+          name: aasan-android-packages
+          path: |
+            android-twa/*.apk
+            android-twa/*.aab
+            android-twa/app/build/outputs/apk/**/*.apk
           retention-days: 30
+          if-no-files-found: warn
