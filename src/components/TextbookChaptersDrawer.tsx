@@ -13,6 +13,8 @@ import {
   FileText,
   Building2,
   Compass,
+  Folder,
+  FolderOpen,
 } from "lucide-react";
 import {
   TextbookChapter,
@@ -20,6 +22,7 @@ import {
   getTextbookChapters,
 } from "../data/textbookDatabase.ts";
 import { CURRICULUM_BOARDS, ALL_GRADES } from "../data/curriculumData.ts";
+import { TextbooksFolderExplorer } from "./TextbooksFolderExplorer.tsx";
 
 interface TextbookChaptersDrawerProps {
   isOpen: boolean;
@@ -38,6 +41,7 @@ export const TextbookChaptersDrawer: React.FC<TextbookChaptersDrawerProps> = ({
   currentSubject,
   onSelectChapter,
 }) => {
+  const [viewMode, setViewMode] = useState<"folders" | "picker">("folders");
   const [selectedCurriculum, setSelectedCurriculum] = useState<string>(currentCurriculum);
   const [selectedGrade, setSelectedGrade] = useState<string>(currentGrade);
   const [selectedSubject, setSelectedSubject] = useState<string>(currentSubject);
@@ -105,7 +109,7 @@ export const TextbookChaptersDrawer: React.FC<TextbookChaptersDrawerProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col transform transition-transform duration-300 ease-out"
+        className={`w-full ${viewMode === "folders" ? "max-w-4xl" : "max-w-2xl"} bg-white h-full shadow-2xl flex flex-col transform transition-all duration-300 ease-out`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
@@ -117,14 +121,14 @@ export const TextbookChaptersDrawer: React.FC<TextbookChaptersDrawerProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base sm:text-lg font-bold">
-                  பாடப் புத்தக அத்தியாயங்கள் (Textbook Chapters Drawer)
+                  பாடநூல் பெட்டகம் • Textbooks &amp; Materials Library
                 </h2>
                 <span className="text-[10px] bg-amber-500 text-slate-950 font-black px-1.5 py-0.5 rounded">
-                  ஆசான்
+                  ஆசான் 1-12
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Browse official textbooks, sub-topics, competencies, and open verified government PDFs.
+                Browse board-wise folders (Classes 1-12), mediums, official government PDFs, worksheets &amp; model question papers.
               </p>
             </div>
           </div>
@@ -137,8 +141,63 @@ export const TextbookChaptersDrawer: React.FC<TextbookChaptersDrawerProps> = ({
           </button>
         </div>
 
-        {/* Filter Controls Row */}
-        <div className="p-3.5 bg-slate-50 border-b border-slate-200 space-y-2.5">
+        {/* View Mode Switcher Tab */}
+        <div className="bg-slate-900 px-4 py-2 flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-800">
+            <button
+              onClick={() => setViewMode("folders")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                viewMode === "folders"
+                  ? "bg-amber-400 text-slate-950 shadow-xs"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Classes 1 - 12 Folders (All Boards)</span>
+            </button>
+            <button
+              onClick={() => setViewMode("picker")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                viewMode === "picker"
+                  ? "bg-amber-400 text-slate-950 shadow-xs"
+                  : "text-slate-300 hover:text-white"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>Chapter Picker</span>
+            </button>
+          </div>
+          <span className="text-[11px] text-slate-400 hidden sm:inline">
+            TN Board • CBSE • ICSE
+          </span>
+        </div>
+
+        {viewMode === "folders" ? (
+          <div className="flex-1 overflow-y-auto p-3 sm:p-5 bg-slate-50">
+            <TextbooksFolderExplorer
+              embedded={false}
+              onSelectMaterialForLesson={(curriculum, grade, subject, topic, resources) => {
+                onSelectChapter({
+                  id: `chap-${Date.now()}`,
+                  curriculum,
+                  grade,
+                  subject,
+                  unitOrTerm: "Term 1",
+                  title: topic,
+                  suggestedObjectives: `Master core syllabus competencies in ${topic} for ${grade} ${subject}.`,
+                  pdfSourceTitle: resources || `${curriculum} Official Textbook`,
+                  pdfSourceUrl: "https://tnschools.gov.in/textbooks",
+                  isVerifiedGovtPdf: true,
+                  keySubtopics: [topic],
+                });
+                onClose();
+              }}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Filter Controls Row */}
+            <div className="p-3.5 bg-slate-50 border-b border-slate-200 space-y-2.5">
           {/* Active selection selectors */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <div>
@@ -434,7 +493,9 @@ export const TextbookChaptersDrawer: React.FC<TextbookChaptersDrawerProps> = ({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </>
+    )}
+  </div>
+</div>
   );
 };

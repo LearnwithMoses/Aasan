@@ -7,6 +7,8 @@ import {
   GraduationCap,
   Info,
   BookOpen,
+  Folder,
+  FolderOpen,
   Bell,
   Heart,
   Settings,
@@ -125,15 +127,15 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          {/* Textbook Chapters & PDFs Browser Button */}
+          {/* Master Textbooks & Materials Folder (Classes 1-12) Button */}
           {onOpenTextbookDrawer && (
             <button
               onClick={onOpenTextbookDrawer}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-indigo-950/70 hover:bg-indigo-900 text-indigo-200 border border-indigo-700/50 transition shadow-2xs"
-              title="Browse Full State Board & NCERT Textbook Lessons and Official Government PDFs"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-200 border border-amber-600/50 transition shadow-2xs"
+              title="பாடநூல் பெட்டகம் • All Textbooks, Guides & Materials Folder (Classes 1 to 12)"
             >
-              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-              <span>பாடங்கள் &amp; PDFs</span>
+              <Folder className="w-3.5 h-3.5 text-amber-400 fill-amber-400/30" />
+              <span>பாடநூல் பெட்டகம் (1-12)</span>
             </button>
           )}
 

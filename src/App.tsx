@@ -708,6 +708,17 @@ export default function App() {
             onSelectWord={() => {
               setActiveNavTab("more");
             }}
+            onSelectMaterialForLesson={(curriculum, grade, subject, topic, resources) => {
+              setFormData((prev) => ({
+                ...prev,
+                curriculum,
+                grade,
+                subject,
+                topic,
+                resources: resources ? `${prev.resources ? prev.resources + "; " : ""}${resources}` : prev.resources,
+              }));
+              handleGoToForm();
+            }}
           />
         )}
 
