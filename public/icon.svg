@@ -1,0 +1,39 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#0f172a" />
+      <stop offset="50%" stopColor="#1e1b4b" />
+      <stop offset="100%" stopColor="#0a0a16" />
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#fef08a" />
+      <stop offset="45%" stopColor="#f59e0b" />
+      <stop offset="100%" stopColor="#d97706" />
+    </linearGradient>
+    <linearGradient id="flameGrad" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stopColor="#ea580c" />
+      <stop offset="50%" stopColor="#facc15" />
+      <stop offset="100%" stopColor="#ffffff" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background with slight rounding -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Outer Solar Aura Ring -->
+  <circle cx="256" cy="256" r="192" stroke="url(#goldGrad)" stroke-width="8" stroke-dasharray="16 24" opacity="0.65" />
+  <circle cx="256" cy="256" r="212" stroke="url(#goldGrad)" stroke-width="2" opacity="0.4" />
+
+  <!-- Palm Leaf Scripture Base -->
+  <path d="M120 360 C180 330 220 340 256 370 C292 340 332 330 392 360 V240 C332 210 292 220 256 250 C220 220 180 210 120 240 Z" fill="#181124" stroke="url(#goldGrad)" stroke-width="14" stroke-linejoin="round" />
+  <line x1="256" y1="250" x2="256" y2="370" stroke="url(#goldGrad)" stroke-width="14" stroke-linecap="round" />
+
+  <!-- Tamil Letter 'அ' -->
+  <text x="256" y="235" text-anchor="middle" fill="url(#goldGrad)" font-size="130" font-weight="900" font-family="'Mukta Malar', 'Noto Sans Tamil', system-ui, sans-serif">அ</text>
+
+  <!-- Flame of Knowledge -->
+  <path d="M256 70 C245 95 230 112 230 128 C230 144 242 155 256 155 C270 155 282 144 282 128 C282 112 267 95 256 70 Z" fill="url(#flameGrad)" />
+
+  <!-- Writing Stylus Quill -->
+  <path d="M380 90 C360 140 320 200 270 270 L250 290 L260 260 C290 210 330 150 380 90 Z" fill="url(#goldGrad)" opacity="0.9" />
+</svg>

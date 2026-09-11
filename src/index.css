@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+:root {
+  --n: #101827;
+  --g: #d9ad57;
+  --i: #172033;
+  --m: #697386;
+  --l: #e5e7eb;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  background-color: #faf7f7;
+  color: var(--i);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* User layout specifications matching Blood Bridge UI */
+.card {
+  background: white;
+  border: 1px solid #ffe4e6;
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(225, 29, 72, 0.04);
+}
+
+.form {
+  padding: 22px;
+}
+
+@media (min-width: 1024px) {
+  .form-sticky {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+}
+
+.output {
+  padding: 28px;
+  min-height: 600px;
+}
+
+.empty {
+  height: 620px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  color: var(--m);
+}
+
+.empty strong {
+  display: block;
+  color: var(--i);
+  font-size: 22px;
+  margin-bottom: 7px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+
+.plan h1 {
+  font: 30px Georgia, serif;
+  margin: 0 0 5px;
+  color: #101827;
+}
+
+.meta {
+  color: var(--m);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.section {
+  border-top: 1px solid var(--l);
+  padding: 18px 0;
+}
+
+.section h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #101827;
+  font-weight: 800;
+}
+
+.section ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.section li {
+  margin: 5px 0;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.flow {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 10px 0;
+}
+
+.flow th,
+.flow td {
+  border: 1px solid var(--l);
+  padding: 10px 12px;
+  vertical-align: top;
+  text-align: left;
+}
+
+.flow th {
+  background: #f6f7f9;
+  font-weight: 700;
+  color: #172033;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.mini {
+  background: #f8f9fb;
+  padding: 13px;
+  border-radius: 10px;
+  border: 1px solid #edf0f5;
+}
+
+.mini b {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #101827;
+}
+
+.mini ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+}
+
+.error {
+  background: #fff1f1;
+  color: #9f1239;
+  border: 1px solid #fecdd3;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .cols {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Print Mode */
+@media print {
+  header,
+  .form,
+  .toolbar,
+  .no-print,
+  #header-print-btn,
+  #form-section {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  main {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .output {
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  .flow th {
+    background: #eef1f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .mini {
+    background: #f8f9fb !important;
+    border: 1px solid #d1d5db !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
