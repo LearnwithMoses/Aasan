@@ -278,5 +278,164 @@ export interface SavedLessonPlan {
   questionPaper?: QuestionPaper;
   rubric?: InternalAssessmentRubric;
   syllabusPlanner?: AcademicSyllabusPlanner;
+  status?: "Ready" | "Draft" | "In Progress" | "Archived";
+  isFavorite?: boolean;
+}
+
+export type ClassStatus = "upcoming" | "in_progress" | "completed";
+
+export interface ScheduledClass {
+  id: string;
+  time: string;
+  endTime?: string;
+  grade: string;
+  section: string;
+  subject: string;
+  topic: string;
+  duration: number; // minutes
+  status: ClassStatus;
+  room?: string;
+  lessonPlanId?: string;
+  notes?: string;
+  reflection?: {
+    rating: "excellent" | "good" | "average" | "needs_work";
+    whatWorked: string;
+    whatToChange: string;
+    studentFollowUps: string;
+  };
+}
+
+export interface TeachingNote {
+  id: string;
+  title: string;
+  grade: string;
+  subject: string;
+  topic: string;
+  date: string;
+  keyPoints: string[];
+  teacherNotes: string;
+  nextClass: string;
+  tags: string[];
+  isFavorite: boolean;
+  updatedAt: string;
+}
+
+export type ActivityCategory =
+  | "Icebreakers"
+  | "Group Activities"
+  | "Speaking Activities"
+  | "Writing Activities"
+  | "Reading Activities"
+  | "Critical Thinking"
+  | "Debates"
+  | "Role Plays"
+  | "Games"
+  | "Revision"
+  | "Assessment Activities";
+
+export interface ClassroomActivityItem {
+  id: string;
+  title: string;
+  category: ActivityCategory;
+  purpose: string;
+  grade: string;
+  subject: string;
+  duration: string;
+  materials: string;
+  grouping: "Individual" | "Pairs" | "Small Groups" | "Whole Class";
+  instructions: string[];
+  learningOutcome: string;
+  isFavorite: boolean;
+}
+
+export interface VocabularyWord {
+  id: string;
+  word: string;
+  pronunciation: string;
+  wordType: string;
+  meaning: string;
+  exampleSentence: string;
+  synonyms: string[];
+  antonyms: string[];
+  subject: string;
+  topic: string;
+  grade: string;
+  isFavorite: boolean;
+}
+
+export interface AssessmentItem {
+  id: string;
+  title: string;
+  type: "quiz" | "mcq" | "short_answer" | "exit_ticket" | "assignment" | "oral" | "observation";
+  typeName: string;
+  grade: string;
+  subject: string;
+  topic: string;
+  marks: number;
+  durationMinutes: number;
+  date: string;
+  questionsCount: number;
+  instructions: string[];
+  isFavorite?: boolean;
+  isArchived?: boolean;
+}
+
+export interface StudentRecord {
+  id: string;
+  name: string;
+  rollNumber: string;
+  grade: string;
+  section: string;
+  attendanceRate?: string;
+  notes?: string;
+}
+
+export interface TeacherClassRoster {
+  id: string;
+  grade: string;
+  section: string;
+  subject: string;
+  room: string;
+  studentCount: number;
+  students: StudentRecord[];
+}
+
+export interface StudentObservationItem {
+  id: string;
+  studentName: string;
+  grade: string;
+  section: string;
+  date: string;
+  subject: string;
+  observation: string;
+  participationLevel: "Active" | "Moderate" | "Needs Encouragement";
+  strength: string;
+  areaForImprovement: string;
+  followUpAction: string;
+}
+
+export interface TeachingReminder {
+  id: string;
+  title: string;
+  dueTime: string;
+  priority: "normal" | "urgent";
+  completed: boolean;
+  category: "lesson" | "assessment" | "admin" | "student";
+}
+
+export interface TeacherResourceItem {
+  id: string;
+  title: string;
+  type: "lesson_plan" | "worksheet" | "activity" | "assessment" | "vocabulary" | "textbook" | "document";
+  typeName: string;
+  category: string;
+  subject: string;
+  grade: string;
+  topic: string;
+  date: string;
+  tags: string[];
+  isFavorite: boolean;
+  fileUrl?: string;
+  contentPreview?: string;
 }
 

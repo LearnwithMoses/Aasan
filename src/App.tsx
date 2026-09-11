@@ -20,6 +20,19 @@ import { PWAInstallButton } from "./components/PWAInstallButton.tsx";
 import { BottomNavBar, AppNavTab } from "./components/BottomNavBar.tsx";
 import { TeacherGuideModal } from "./components/TeacherGuideModal.tsx";
 import { NotificationsModal } from "./components/NotificationsModal.tsx";
+
+// Teacher Companion Screens & Modals
+import { HomeScreen } from "./components/HomeScreen.tsx";
+import { LessonsScreen } from "./components/LessonsScreen.tsx";
+import { TeachingNotesScreen } from "./components/TeachingNotesScreen.tsx";
+import { ResourceLibraryScreen } from "./components/ResourceLibraryScreen.tsx";
+import { MoreHubScreen } from "./components/MoreHubScreen.tsx";
+import { ClassTeachingModal } from "./components/ClassTeachingModal.tsx";
+import { QuickNoteModal } from "./components/QuickNoteModal.tsx";
+import { GuidedLessonModal } from "./components/GuidedLessonModal.tsx";
+import { LessonDetailModal } from "./components/LessonDetailModal.tsx";
+import { GlobalSearchModal } from "./components/GlobalSearchModal.tsx";
+
 import {
   LessonPlan,
   LessonPlanRequest,
@@ -30,6 +43,14 @@ import {
   SavedLessonPlan,
   InternalAssessmentRubric,
   AcademicSyllabusPlanner,
+  ScheduledClass,
+  TeachingNote,
+  ClassroomActivityItem,
+  VocabularyWord,
+  AssessmentItem,
+  TeacherClassRoster,
+  StudentObservationItem,
+  TeachingReminder,
 } from "./types.ts";
 import {
   getUserProfile,
@@ -38,7 +59,25 @@ import {
   getSavedPlans,
   savePlanToVault,
   deleteSavedPlan,
+  toggleFavoritePlan,
 } from "./data/storage.ts";
+import {
+  getScheduledClasses,
+  saveScheduledClass,
+  getTeachingNotes,
+  saveTeachingNote,
+  deleteTeachingNote,
+  toggleFavoriteNote,
+  getClassroomActivities,
+  saveClassroomActivity,
+  getVocabularyWords,
+  saveVocabularyWord,
+  getAssessments,
+  getTeacherRosters,
+  getStudentObservations,
+  getTeachingReminders,
+  toggleReminderCompleted,
+} from "./data/teacherCompanionStore.ts";
 import {
   SlidersHorizontal,
   FileText,
@@ -52,20 +91,20 @@ import {
 const INITIAL_FORM: LessonPlanRequest = {
   curriculum: "CBSE / NCERT",
   grade: "Class 8",
-  subject: "Mathematics",
-  topic: "Linear equations in one variable",
-  duration: 40,
+  subject: "English",
+  topic: "Active and Passive Voice in Context",
+  duration: 45,
   classStrength: "38",
   lessonModel: "5E",
   objectives:
-    "Solve linear equations with variables on one side, understand equation balancing, and verify solutions.",
+    "Identify active vs passive constructions in newspaper articles, convert active sentences to passive, and understand stylistic reasons for using passive voice.",
   priorKnowledge:
-    "Basic algebraic terms, arithmetic operations with integers, concept of equality.",
+    "Subject-verb-object syntax, transitive vs intransitive verbs, past participles.",
   language: "English",
   resources:
-    "Blackboard, NCERT textbook Chapter 2, balance scale visual, student practice worksheets.",
+    "Blackboard, NCERT reader, newspaper clippings, student practice worksheets.",
   differentiation:
-    "Step-by-step worked example cards for support; multi-step word problems for extension.",
+    "Sentence starter scaffolds for struggling learners; editorial writing prompt for advanced learners.",
   specialRequirements:
     "Include a 5-minute exit ticket to verify individual mastery before class ends.",
   aiEngine: "gemini",
@@ -85,6 +124,20 @@ export default function App() {
   const [savedPlans, setSavedPlans] = useState<SavedLessonPlan[]>([]);
   const [dismissBanner, setDismissBanner] = useState<boolean>(false);
 
+  // Active Navigation Tab: "home" | "lessons" | "notes" | "resources" | "more"
+  const [activeNavTab, setActiveNavTab] = useState<AppNavTab>("home");
+  const [showAIGeneratorView, setShowAIGeneratorView] = useState<boolean>(false);
+
+  // Teacher Companion Entity States
+  const [classes, setClasses] = useState<ScheduledClass[]>([]);
+  const [notes, setNotes] = useState<TeachingNote[]>([]);
+  const [activities, setActivities] = useState<ClassroomActivityItem[]>([]);
+  const [vocabulary, setVocabulary] = useState<VocabularyWord[]>([]);
+  const [assessments, setAssessments] = useState<AssessmentItem[]>([]);
+  const [rosters, setRosters] = useState<TeacherClassRoster[]>([]);
+  const [observations, setObservations] = useState<StudentObservationItem[]>([]);
+  const [reminders, setReminders] = useState<TeachingReminder[]>([]);
+
   // Modals state
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
@@ -93,7 +146,14 @@ export default function App() {
   const [isGlobalTextbookOpen, setIsGlobalTextbookOpen] = useState(false);
   const [isTeacherGuideOpen, setIsTeacherGuideOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [activeNavTab, setActiveNavTab] = useState<AppNavTab>("home");
+
+  // Teacher Companion Specific Modals
+  const [selectedClassForTeaching, setSelectedClassForTeaching] = useState<ScheduledClass | null>(null);
+  const [isQuickNoteOpen, setIsQuickNoteOpen] = useState(false);
+  const [noteToEdit, setNoteToEdit] = useState<TeachingNote | null>(null);
+  const [isGuidedLessonOpen, setIsGuidedLessonOpen] = useState(false);
+  const [selectedLessonForDetail, setSelectedLessonForDetail] = useState<SavedLessonPlan | null>(null);
+  const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
 
   // Pro features state
   const [isWorksheetOpen, setIsWorksheetOpen] = useState(false);
@@ -121,10 +181,18 @@ export default function App() {
   const outputRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
-  // Load profile and pro status on mount
+  // Load all data on mount
   useEffect(() => {
     refreshProStatus();
     setSavedPlans(getSavedPlans());
+    setClasses(getScheduledClasses());
+    setNotes(getTeachingNotes());
+    setActivities(getClassroomActivities());
+    setVocabulary(getVocabularyWords());
+    setAssessments(getAssessments());
+    setRosters(getTeacherRosters());
+    setObservations(getStudentObservations());
+    setReminders(getTeachingReminders());
   }, []);
 
   const refreshProStatus = () => {
@@ -183,58 +251,48 @@ export default function App() {
     setIsLoading(true);
     setError(null);
 
-    // If on mobile/tablet, switch to the plan tab immediately so the teacher sees progress
-    if (window.innerWidth < 1024) {
-      setActiveMobileTab("plan");
-    }
-
     try {
-      const response = await fetch("/api/generate", {
+      const response = await fetch("/api/generate-lesson-plan", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to generate plan");
+        throw new Error(data.error || "Failed to generate lesson plan");
       }
 
-      if (data.plan) {
-        setPlan(data.plan);
-        // Clear cached auxiliary tools for new topic
-        setWorksheet(null);
-        setBlackboard(null);
-        setScript(null);
-        setRubric(null);
-        setSyllabusPlanner(null);
+      setPlan(data.plan);
+      setWorksheet(null);
+      setBlackboard(null);
+      setScript(null);
+      setRubric(null);
+      setSyllabusPlanner(null);
+      setActiveMobileTab("plan");
 
-        // Switch to plan view and scroll into view smoothly
-        setActiveMobileTab("plan");
-        setTimeout(() => {
-          if (outputRef.current) {
-            outputRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
-        }, 100);
-      } else {
-        throw new Error("Invalid response format received from server");
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Error generating lesson plan";
-      setError(message);
+      // Auto save generated plan to vault
+      savePlanToVault(data.plan, formData);
+      setSavedPlans(getSavedPlans());
+
+      setTimeout(() => {
+        if (outputRef.current) {
+          outputRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred while generating the plan.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Generate Student Worksheet (Pro Feature)
+  // Generate Print-Ready Student Worksheet
   const handleGenerateWorksheet = async () => {
     if (!plan) return;
     setIsWorksheetOpen(true);
-    if (worksheet) return; // Already generated for this plan
+    if (worksheet) return;
 
     setIsGeneratingWorksheet(true);
     try {
@@ -244,7 +302,7 @@ export default function App() {
         body: JSON.stringify({
           plan,
           formData,
-          schoolName: userProfile?.school || "School Model Academy",
+          schoolName: userProfile?.school || "National Model Academy",
         }),
       });
       const data = await res.json();
@@ -258,11 +316,11 @@ export default function App() {
     }
   };
 
-  // Generate Blackboard Layout (Pro Feature)
+  // Generate Blackboard Layout
   const handleGenerateBlackboard = async () => {
     if (!plan) return;
     setIsBlackboardOpen(true);
-    if (blackboard) return; // Already generated for this plan
+    if (blackboard) return;
 
     setIsGeneratingBlackboard(true);
     try {
@@ -282,11 +340,11 @@ export default function App() {
     }
   };
 
-  // Generate Teacher Explanation Script (Pro Feature)
+  // Generate Teacher Explanation Script
   const handleGenerateScript = async () => {
     if (!plan) return;
     setIsScriptOpen(true);
-    if (script) return; // Already generated for this plan
+    if (script) return;
 
     setIsGeneratingScript(true);
     try {
@@ -330,39 +388,99 @@ export default function App() {
     if (saved.script) setScript(saved.script);
     if (saved.rubric) setRubric(saved.rubric);
     if (saved.syllabusPlanner) setSyllabusPlanner(saved.syllabusPlanner);
-    setActiveMobileTab("plan");
-    setTimeout(() => {
-      if (outputRef.current) {
-        outputRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 100);
+    setSelectedLessonForDetail(saved);
   };
 
-  // Delete Plan from Vault
+  // Duplicate Plan
+  const handleDuplicatePlan = (saved: SavedLessonPlan) => {
+    const duplicatedPlan: LessonPlan = {
+      ...saved.plan,
+      title: `${saved.plan.title} (Copy)`,
+    };
+    savePlanToVault(duplicatedPlan, {
+      ...saved.formData,
+      topic: `${saved.formData.topic} (Copy)`,
+    });
+    setSavedPlans(getSavedPlans());
+  };
+
+  // Delete Plan
   const handleDeleteSavedPlan = (id: string) => {
     deleteSavedPlan(id);
     setSavedPlans(getSavedPlans());
   };
 
-  const handleGoToPlan = () => {
-    setActiveMobileTab("plan");
-    if (outputRef.current) {
-      outputRef.current.scrollIntoView({ behavior: "smooth" });
+  // Toggle Favorite Plan
+  const handleToggleFavoritePlan = (id: string) => {
+    toggleFavoritePlan(id);
+    setSavedPlans(getSavedPlans());
+    if (selectedLessonForDetail && selectedLessonForDetail.id === id) {
+      setSelectedLessonForDetail({
+        ...selectedLessonForDetail,
+        isFavorite: !selectedLessonForDetail.isFavorite,
+      });
     }
   };
 
+  // Save Guided Lesson from Wizard
+  const handleSaveGuidedLesson = (newPlan: SavedLessonPlan) => {
+    savePlanToVault(newPlan.plan, newPlan.formData);
+    setSavedPlans(getSavedPlans());
+    setPlan(newPlan.plan);
+    setFormData(newPlan.formData);
+    setSelectedLessonForDetail(newPlan);
+  };
+
+  // Scheduled Class Actions
+  const handleSaveClass = (updated: ScheduledClass) => {
+    saveScheduledClass(updated);
+    setClasses(getScheduledClasses());
+  };
+
+  // Teaching Note Actions
+  const handleSaveNote = (note: TeachingNote) => {
+    saveTeachingNote(note);
+    setNotes(getTeachingNotes());
+  };
+
+  const handleDeleteNote = (id: string) => {
+    deleteTeachingNote(id);
+    setNotes(getTeachingNotes());
+  };
+
+  const handleToggleFavoriteNote = (id: string) => {
+    toggleFavoriteNote(id);
+    setNotes(getTeachingNotes());
+  };
+
+  // Reminder toggle
+  const handleToggleReminder = (id: string) => {
+    toggleReminderCompleted(id);
+    setReminders(getTeachingReminders());
+  };
+
   const handleGoToForm = () => {
+    setActiveNavTab("lessons");
+    setShowAIGeneratorView(true);
     setActiveMobileTab("form");
     if (formRef.current) {
       formRef.current.scrollIntoView({ behavior: "smooth" });
     }
   };
 
+  const handleGoToPlan = () => {
+    setActiveNavTab("lessons");
+    setShowAIGeneratorView(true);
+    setActiveMobileTab("plan");
+    if (outputRef.current) {
+      outputRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#faf7f7] flex flex-col antialiased text-[#172033] pb-24 lg:pb-0">
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-slate-900 selection:bg-[#263B80] selection:text-white pb-14 sm:pb-0">
+      {/* Top Main Navigation Header */}
       <Header
-        hasPlan={Boolean(plan)}
-        onPrint={() => window.print()}
         isPro={isPro}
         proDaysRemaining={proDaysRemaining}
         userProfile={userProfile}
@@ -376,26 +494,28 @@ export default function App() {
         onOpenTextbookDrawer={() => setIsGlobalTextbookOpen(true)}
         onOpenNotifications={() => setIsNotificationsOpen(true)}
         onOpenTeacherGuide={() => setIsTeacherGuideOpen(true)}
+        hasPlan={Boolean(plan)}
+        onPrint={() => window.print()}
       />
 
-      {/* Top Notification Announcement Banner */}
+      {/* Trial / Active Pro Promotion Banner */}
       {!dismissBanner && (
-        <div className="no-print bg-gradient-to-r from-slate-900 via-[#101827] to-slate-900 text-white px-4 py-2 border-b border-slate-800 text-xs">
+        <div className="no-print bg-[#263B80] text-white px-4 py-2.5 text-xs">
           <div className="max-w-[1250px] mx-auto flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               {isPro ? (
                 <>
-                  <Sparkles className="w-4 h-4 text-[#d9ad57] flex-shrink-0" />
+                  <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
                   <span>
-                    <strong>Aasaan Pro Active (ஆசான் புரோ):</strong> You have {proDaysRemaining} days of full
-                    unlimited access to Aasaan Master Engine, Samacheer Kalvi &amp; Board Question Papers, Printable Worksheets, and Word export!
+                    <strong>Aasan Pro Active (ஆசான் புரோ):</strong> You have {proDaysRemaining} days of full
+                    unlimited access to all lesson generators, board papers, and printable worksheets!
                   </span>
                 </>
               ) : (
                 <>
-                  <Gift className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <Gift className="w-4 h-4 text-emerald-400 shrink-0" />
                   <span>
-                    <strong>1st Month Free Trial:</strong> Provide your basic details to unlock 30 days
+                    <strong>1st Month Free Trial:</strong> Complete your basic teacher details to unlock 30 days
                     of all Pro features free. Subsequent months are just ₹50/mo.
                   </span>
                   <button
@@ -417,86 +537,213 @@ export default function App() {
         </div>
       )}
 
-      {/* Mobile/Tablet Sticky Section Switcher */}
-      <div className="lg:hidden no-print sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-2.5 shadow-xs">
-        <div className="flex items-center gap-2 max-w-md mx-auto bg-slate-100 p-1 rounded-xl">
-          <button
-            type="button"
-            onClick={handleGoToForm}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
-              activeMobileTab === "form"
-                ? "bg-[#101827] text-white shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>1. Lesson Details</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleGoToPlan}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
-              activeMobileTab === "plan"
-                ? "bg-[#101827] text-white shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>2. Generated Plan</span>
-            {plan && (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold ml-1">
-                Ready
-              </span>
+      {/* MAIN CONTENT AREA BY ACTIVE TAB */}
+      <main className="max-w-[1250px] w-full mx-auto my-3 sm:my-5 px-4 sm:px-6 flex-1">
+        {/* TAB 1: HOME SCREEN (Dashboard, Today's Classes, Quick Actions, Reminders) */}
+        {activeNavTab === "home" && (
+          <HomeScreen
+            userProfile={userProfile}
+            classes={classes}
+            recentLessons={savedPlans}
+            recentNotes={notes}
+            reminders={reminders}
+            onOpenClass={(cls) => setSelectedClassForTeaching(cls)}
+            onNavigateTab={(tab) => {
+              setActiveNavTab(tab);
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+            onOpenCreateLesson={() => setIsGuidedLessonOpen(true)}
+            onOpenQuickNote={() => {
+              setNoteToEdit(null);
+              setIsQuickNoteOpen(true);
+            }}
+            onToggleReminder={handleToggleReminder}
+            onOpenSearch={() => setIsGlobalSearchOpen(true)}
+            onOpenNotifications={() => setIsNotificationsOpen(true)}
+          />
+        )}
+
+        {/* TAB 2: LESSONS (Lesson Library OR AI Studio Generator) */}
+        {activeNavTab === "lessons" && (
+          <div>
+            {showAIGeneratorView ? (
+              <div className="space-y-4">
+                {/* Back to library banner */}
+                <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200/80">
+                  <button
+                    onClick={() => setShowAIGeneratorView(false)}
+                    className="text-xs font-bold text-[#263B80] hover:underline flex items-center gap-1.5"
+                  >
+                    ← Back to Lesson Plans Library
+                  </button>
+                  <span className="text-xs font-extrabold text-slate-700">
+                    Aasan AI Lesson Studio
+                  </span>
+                </div>
+
+                {/* Mobile/Tablet Sticky Section Switcher for Generator */}
+                <div className="lg:hidden no-print sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-2.5 rounded-2xl shadow-xs">
+                  <div className="flex items-center gap-2 max-w-md mx-auto bg-slate-100 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={handleGoToForm}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
+                        activeMobileTab === "form"
+                          ? "bg-[#263B80] text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                      <span>1. Lesson Details</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGoToPlan}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 ${
+                        activeMobileTab === "plan"
+                          ? "bg-[#263B80] text-white shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>2. Generated Plan</span>
+                      {plan && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-semibold ml-1">
+                          Ready
+                        </span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-[390px_1fr] gap-6 items-start">
+                  <div
+                    ref={formRef}
+                    className={`w-full ${activeMobileTab === "form" ? "block" : "hidden lg:block"}`}
+                  >
+                    <LessonForm
+                      formData={formData}
+                      onChange={handleFieldChange}
+                      onSelectPreset={handleSelectPreset}
+                      onReset={handleReset}
+                      onSubmit={handleGenerate}
+                      isLoading={isLoading}
+                      isPro={isPro}
+                      onOpenUpgrade={() => setIsUpgradeOpen(true)}
+                    />
+                  </div>
+
+                  <div
+                    ref={outputRef}
+                    className={`w-full min-w-0 ${activeMobileTab === "plan" ? "block" : "hidden lg:block"}`}
+                  >
+                    <LessonOutput
+                      plan={plan}
+                      formData={formData}
+                      isLoading={isLoading}
+                      error={error}
+                      isPro={isPro}
+                      onRetry={handleGenerate}
+                      onEditDetails={handleGoToForm}
+                      onOpenWorksheet={handleGenerateWorksheet}
+                      onOpenBlackboard={handleGenerateBlackboard}
+                      onOpenScript={handleGenerateScript}
+                      onOpenQuestionPaper={() => setIsQuestionPaperOpen(true)}
+                      onOpenRubric={() => setIsRubricOpen(true)}
+                      onOpenSyllabusPlanner={() => setIsSyllabusOpen(true)}
+                      onSaveToVault={handleSaveToVault}
+                      onOpenUpgrade={() => setIsUpgradeOpen(true)}
+                      onOpenTextbooks={() => setIsGlobalTextbookOpen(true)}
+                      onOpenVault={() => setIsVaultOpen(true)}
+                      onOpenTeacherGuide={() => setIsTeacherGuideOpen(true)}
+                      onOpenAndroidPublish={() => setIsAndroidPublishOpen(true)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <LessonsScreen
+                savedPlans={savedPlans}
+                onOpenPlanDetail={(p) => setSelectedLessonForDetail(p)}
+                onOpenCreateLesson={() => setIsGuidedLessonOpen(true)}
+                onOpenAIGenerator={() => setShowAIGeneratorView(true)}
+                onDuplicatePlan={handleDuplicatePlan}
+                onToggleFavorite={handleToggleFavoritePlan}
+              />
             )}
-          </button>
-        </div>
-      </div>
+          </div>
+        )}
 
-      <main className="max-w-[1250px] w-full mx-auto my-4 lg:my-6 px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-[390px_1fr] gap-6 flex-1 items-start">
-        {/* Left Column: Lesson Form */}
-        <div
-          ref={formRef}
-          className={`w-full ${activeMobileTab === "form" ? "block" : "hidden lg:block"}`}
-        >
-          <LessonForm
-            formData={formData}
-            onChange={handleFieldChange}
-            onSelectPreset={handleSelectPreset}
-            onReset={handleReset}
-            onSubmit={handleGenerate}
-            isLoading={isLoading}
-            isPro={isPro}
-            onOpenUpgrade={() => setIsUpgradeOpen(true)}
+        {/* TAB 3: NOTES (Teaching Notes, Key Points, Next-Class Actions) */}
+        {activeNavTab === "notes" && (
+          <TeachingNotesScreen
+            notes={notes}
+            onOpenNewNote={() => {
+              setNoteToEdit(null);
+              setIsQuickNoteOpen(true);
+            }}
+            onEditNote={(n) => {
+              setNoteToEdit(n);
+              setIsQuickNoteOpen(true);
+            }}
+            onDeleteNote={handleDeleteNote}
+            onToggleFavorite={handleToggleFavoriteNote}
           />
-        </div>
+        )}
 
-        {/* Right Column: Output / Result */}
-        <div
-          ref={outputRef}
-          className={`w-full min-w-0 ${activeMobileTab === "plan" ? "block" : "hidden lg:block"}`}
-        >
-          <LessonOutput
-            plan={plan}
-            formData={formData}
-            isLoading={isLoading}
-            error={error}
-            isPro={isPro}
-            onRetry={handleGenerate}
-            onEditDetails={handleGoToForm}
-            onOpenWorksheet={handleGenerateWorksheet}
-            onOpenBlackboard={handleGenerateBlackboard}
-            onOpenScript={handleGenerateScript}
-            onOpenQuestionPaper={() => setIsQuestionPaperOpen(true)}
-            onOpenRubric={() => setIsRubricOpen(true)}
-            onOpenSyllabusPlanner={() => setIsSyllabusOpen(true)}
-            onSaveToVault={handleSaveToVault}
-            onOpenUpgrade={() => setIsUpgradeOpen(true)}
-            onOpenTextbooks={() => setIsGlobalTextbookOpen(true)}
-            onOpenVault={() => setIsVaultOpen(true)}
-            onOpenTeacherGuide={() => setIsTeacherGuideOpen(true)}
-            onOpenAndroidPublish={() => setIsAndroidPublishOpen(true)}
+        {/* TAB 4: RESOURCES (Official Textbooks, Worksheets, Activities, Rubrics) */}
+        {activeNavTab === "resources" && (
+          <ResourceLibraryScreen
+            savedPlans={savedPlans}
+            activities={activities}
+            vocabulary={vocabulary}
+            onOpenTextbookDrawer={() => setIsGlobalTextbookOpen(true)}
+            onOpenQuestionPaperModal={() => setIsQuestionPaperOpen(true)}
+            onOpenRubricModal={() => setIsRubricOpen(true)}
+            onOpenSyllabusPlannerModal={() => setIsSyllabusOpen(true)}
+            onSelectLesson={(p) => setSelectedLessonForDetail(p)}
+            onSelectActivity={() => {
+              setActiveNavTab("more");
+            }}
+            onSelectWord={() => {
+              setActiveNavTab("more");
+            }}
           />
-        </div>
+        )}
+
+        {/* TAB 5: MORE (Schedule, Activities, Vocabulary, Assessments, Classes, Observations, Favorites, Settings) */}
+        {activeNavTab === "more" && (
+          <MoreHubScreen
+            userProfile={userProfile}
+            activities={activities}
+            vocabulary={vocabulary}
+            assessments={assessments}
+            rosters={rosters}
+            observations={observations}
+            savedPlans={savedPlans}
+            notes={notes}
+            classes={classes}
+            onOpenQuestionPaperModal={() => setIsQuestionPaperOpen(true)}
+            onOpenRubricModal={() => setIsRubricOpen(true)}
+            onOpenSyllabusPlannerModal={() => setIsSyllabusOpen(true)}
+            onOpenBrandModal={() => setIsBrandModalOpen(true)}
+            onOpenUpgradeModal={() => setIsUpgradeOpen(true)}
+            onOpenRegistrationModal={() => setIsRegistrationOpen(true)}
+            onSelectLesson={(p) => setSelectedLessonForDetail(p)}
+            onSelectNote={(n) => {
+              setNoteToEdit(n);
+              setIsQuickNoteOpen(true);
+            }}
+            onAddActivity={(a) => {
+              saveClassroomActivity(a);
+              setActivities(getClassroomActivities());
+            }}
+            onAddWord={(w) => {
+              saveVocabularyWord(w);
+              setVocabulary(getVocabularyWords());
+            }}
+          />
+        )}
       </main>
 
       {/* Aasaan Studio Footer */}
@@ -510,7 +757,7 @@ export default function App() {
               onClick={() => setIsBrandModalOpen(true)}
             />
             <div className="text-xs text-slate-500">
-              <span className="font-semibold text-slate-700">ஆசான் (Aasaan)</span> — The Sovereign Pedagogy Suite for Tamil &amp; Indian Educators.
+              <span className="font-semibold text-slate-700">ஆசான் (Aasaan)</span> — The Sovereign Pedagogy Suite for Teachers &amp; Educators.
             </div>
           </div>
 
@@ -560,30 +807,96 @@ export default function App() {
       </footer>
 
       {/* Floating jump button on mobile when viewing form but plan exists */}
-      {plan && activeMobileTab === "form" && (
-        <div className="lg:hidden fixed bottom-5 right-4 z-40 no-print animate-bounce">
+      {plan && activeMobileTab === "form" && showAIGeneratorView && (
+        <div className="lg:hidden fixed bottom-16 right-4 z-40 no-print animate-bounce">
           <button
             type="button"
             onClick={handleGoToPlan}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#101827] text-white text-xs font-bold shadow-xl border border-slate-700 hover:bg-slate-800"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#263B80] text-white text-xs font-bold shadow-xl border border-slate-700 hover:bg-slate-800"
           >
-            <CheckCircle2 className="w-4 h-4 text-[#d9ad57]" />
+            <CheckCircle2 className="w-4 h-4 text-[#F28B70]" />
             <span>View Generated Plan</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* 1 Month Free Registration Modal */}
+      {/* TEACHER COMPANION MODALS */}
+      {/* 1. Class Teaching Mode Modal */}
+      <ClassTeachingModal
+        isOpen={Boolean(selectedClassForTeaching)}
+        onClose={() => setSelectedClassForTeaching(null)}
+        scheduledClass={selectedClassForTeaching}
+        onSaveClass={handleSaveClass}
+        onOpenPlan={(planId) => {
+          const matched = savedPlans.find((p) => p.id === planId);
+          if (matched) setSelectedLessonForDetail(matched);
+        }}
+        onOpenQuickNote={() => {
+          setNoteToEdit(null);
+          setIsQuickNoteOpen(true);
+        }}
+      />
+
+      {/* 2. Quick Note Modal */}
+      <QuickNoteModal
+        isOpen={isQuickNoteOpen}
+        onClose={() => {
+          setIsQuickNoteOpen(false);
+          setNoteToEdit(null);
+        }}
+        onSaveNote={handleSaveNote}
+        existingNote={noteToEdit}
+      />
+
+      {/* 3. 8-Step Guided Lesson Planning Modal */}
+      <GuidedLessonModal
+        isOpen={isGuidedLessonOpen}
+        onClose={() => setIsGuidedLessonOpen(false)}
+        onSavePlan={handleSaveGuidedLesson}
+      />
+
+      {/* 4. Lesson Plan Detail Modal (Print, Duplicate, Export Word) */}
+      <LessonDetailModal
+        isOpen={Boolean(selectedLessonForDetail)}
+        onClose={() => setSelectedLessonForDetail(null)}
+        savedPlan={selectedLessonForDetail}
+        onDuplicatePlan={handleDuplicatePlan}
+        onDeletePlan={handleDeleteSavedPlan}
+        onToggleFavorite={handleToggleFavoritePlan}
+      />
+
+      {/* 5. Global Search Everywhere Modal */}
+      <GlobalSearchModal
+        isOpen={isGlobalSearchOpen}
+        onClose={() => setIsGlobalSearchOpen(false)}
+        lessons={savedPlans}
+        notes={notes}
+        activities={activities}
+        vocabulary={vocabulary}
+        assessments={assessments}
+        onSelectLesson={(l) => setSelectedLessonForDetail(l)}
+        onSelectNote={(n) => {
+          setNoteToEdit(n);
+          setIsQuickNoteOpen(true);
+        }}
+        onSelectActivity={() => {
+          setActiveNavTab("more");
+        }}
+        onSelectWord={() => {
+          setActiveNavTab("more");
+        }}
+      />
+
+      {/* Standard Modals & Drawers */}
       <RegistrationModal
         isOpen={isRegistrationOpen}
         onClose={() => setIsRegistrationOpen(false)}
-        onSuccess={(profile) => {
+        onSuccess={() => {
           refreshProStatus();
         }}
       />
 
-      {/* Pro Upgrade & Direct UPI Modal */}
       <UpgradeModal
         isOpen={isUpgradeOpen}
         onClose={() => setIsUpgradeOpen(false)}
@@ -593,7 +906,6 @@ export default function App() {
         }}
       />
 
-      {/* Print-Ready Student Worksheet Modal */}
       <WorksheetModal
         isOpen={isWorksheetOpen}
         onClose={() => setIsWorksheetOpen(false)}
@@ -601,7 +913,6 @@ export default function App() {
         isLoading={isGeneratingWorksheet}
       />
 
-      {/* 3-Panel Blackboard Layout Modal */}
       <BlackboardModal
         isOpen={isBlackboardOpen}
         onClose={() => setIsBlackboardOpen(false)}
@@ -609,7 +920,6 @@ export default function App() {
         isLoading={isGeneratingBlackboard}
       />
 
-      {/* Classroom Explanation Script & Easy Breakdown Modal */}
       <ScriptModal
         isOpen={isScriptOpen}
         onClose={() => setIsScriptOpen(false)}
@@ -617,7 +927,6 @@ export default function App() {
         isLoading={isGeneratingScript}
       />
 
-      {/* Board Exam Question Paper & Blueprint Modal (PRO) */}
       <QuestionPaperModal
         isOpen={isQuestionPaperOpen}
         onClose={() => setIsQuestionPaperOpen(false)}
@@ -629,7 +938,6 @@ export default function App() {
         onSaveToVaultNotification={() => setSavedPlans(getSavedPlans())}
       />
 
-      {/* 4-Level Internal Assessment & Practical Scoring Rubric (20 Marks CCE) Modal */}
       <RubricModal
         isOpen={isRubricOpen}
         onClose={() => setIsRubricOpen(false)}
@@ -641,7 +949,6 @@ export default function App() {
         onSaveToVaultNotification={() => setSavedPlans(getSavedPlans())}
       />
 
-      {/* 30-Week Academic Syllabus Distribution Planner Modal */}
       <SyllabusPlannerModal
         isOpen={isSyllabusOpen}
         onClose={() => setIsSyllabusOpen(false)}
@@ -653,7 +960,6 @@ export default function App() {
         onSaveToVaultNotification={() => setSavedPlans(getSavedPlans())}
       />
 
-      {/* Saved Plans Vault Drawer */}
       <SavedPlansDrawer
         isOpen={isVaultOpen}
         onClose={() => setIsVaultOpen(false)}
@@ -662,7 +968,6 @@ export default function App() {
         onDeletePlan={handleDeleteSavedPlan}
       />
 
-      {/* Aasaan Brand Crest & Creed Showcase Modal */}
       <AasaanBrandModal
         isOpen={isBrandModalOpen}
         onClose={() => setIsBrandModalOpen(false)}
@@ -673,13 +978,11 @@ export default function App() {
         onFocusForm={handleGoToForm}
       />
 
-      {/* Android App & Google Play Store Publishing Modal */}
       <AndroidPublishModal
         isOpen={isAndroidPublishOpen}
         onClose={() => setIsAndroidPublishOpen(false)}
       />
 
-      {/* Global Textbook Syllabus & Chapter Browser Drawer with Official PDFs */}
       <TextbookChaptersDrawer
         isOpen={isGlobalTextbookOpen}
         onClose={() => setIsGlobalTextbookOpen(false)}
@@ -699,17 +1002,14 @@ export default function App() {
         }}
       />
 
-      {/* Offline Classroom Connectivity Indicator */}
       <OfflineIndicator />
 
-      {/* Teacher 7-Step Pedagogical Guide Modal matching Blood Bridge */}
       <TeacherGuideModal
         isOpen={isTeacherGuideOpen}
         onClose={() => setIsTeacherGuideOpen(false)}
         onStartPlanning={handleGoToForm}
       />
 
-      {/* Classroom & System Notifications Modal matching Blood Bridge */}
       <NotificationsModal
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
@@ -719,23 +1019,13 @@ export default function App() {
         onStartPlanning={handleGoToForm}
       />
 
-      {/* Mobile-first Bottom Navigation Bar matching Blood Bridge */}
+      {/* 5-Tab Mobile-first Bottom Navigation Bar */}
       <BottomNavBar
         activeTab={activeNavTab}
         onSelectTab={(tab) => {
           setActiveNavTab(tab);
-          if (tab === "home") {
-            setActiveMobileTab("plan");
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          } else if (tab === "form") {
-            handleGoToForm();
-          } else if (tab === "textbooks") {
-            setIsGlobalTextbookOpen(true);
-          } else if (tab === "vault") {
-            setIsVaultOpen(true);
-          } else if (tab === "guide") {
-            setIsTeacherGuideOpen(true);
-          }
+          setShowAIGeneratorView(false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
         }}
         savedPlansCount={savedPlans.length}
         hasPlan={Boolean(plan)}

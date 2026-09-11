@@ -167,6 +167,18 @@ export function deleteSavedPlan(id: string): void {
   }
 }
 
+export function toggleFavoritePlan(id: string): void {
+  const list = getSavedPlans();
+  const updated = list.map((p) =>
+    p.id === id ? { ...p, isFavorite: !p.isFavorite } : p
+  );
+  try {
+    localStorage.setItem(SAVED_PLANS_KEY, JSON.stringify(updated));
+  } catch (err) {
+    console.error("Failed to toggle favorite plan:", err);
+  }
+}
+
 // Export Lesson Plan as Microsoft Word (.doc)
 export function exportToWordDoc(plan: LessonPlan, formData: LessonPlanRequest): void {
   const content = `
