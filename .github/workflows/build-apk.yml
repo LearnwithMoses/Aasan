@@ -2,7 +2,7 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -17,13 +17,13 @@ jobs:
       - name: Set up Java JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '22'
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
@@ -31,24 +31,36 @@ jobs:
       - name: Install Google Bubblewrap CLI
         run: npm install -g @bubblewrap/cli
 
-      - name: Initialize and Build Android APK
+      - name: Create Android project directory
+        run: mkdir -p android-twa
+
+      - name: Initialize Android TWA project
+        working-directory: android-twa
         run: |
-          mkdir -p android-twa
-          cd android-twa
-          
-          # Automated non-interactive initialization from manifest
-          yes "" | bubblewrap init --manifest="https://ais-pre-xkk3dgpmo3wyoxyg3xwq7h-227581521045.asia-southeast1.run.app/manifest.webmanifest" || true
+          bubblewrap init \
+            --manifest="https://ais-pre-xkk3dgpmo3wyoxyg3xwq7h-227581521045.asia-southeast1.run.app/manifest.webmanifest"
 
-          # Build signed APK and AAB packages
-          yes "password123" | bubblewrap build --skipPwaValidation || true
+      - name: Build Android APK and AAB
+        working-directory: android-twa
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: password123
+          BUBBLEWRAP_KEY_PASSWORD: password123
+        run: |
+          bubblewrap build --skipPwaValidation
 
-      - name: Upload Android Packages (APK & AAB)
+      - name: Show generated files
+        working-directory: android-twa
+        run: |
+          echo "===== GENERATED ANDROID FILES ====="
+          find . -type f \( -name "*.apk" -o -name "*.aab" \) -print
+          echo "==================================="
+
+      - name: Upload Android APK and AAB
         uses: actions/upload-artifact@v4
         with:
-          name: aasan-android-packages
+          name: aasan-android-app
           path: |
             android-twa/*.apk
             android-twa/*.aab
-            android-twa/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
           retention-days: 30
-          if-no-files-found: warn
